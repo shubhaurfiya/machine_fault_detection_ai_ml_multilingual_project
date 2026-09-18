@@ -1,0 +1,13 @@
+machine_fault_detection_ai_ml/
+│
+├── app.py                  # Streamlit user interface
+├── generate_dataset.py     # Creates runnable demo WAV dataset
+├── train_model.py          # Extracts features and trains Random Forest
+├── requirements.txt        # Python libraries
+├── README.md               # Setup and explanation
+│
+├── models/
+│   └── machine_fault_model.pkl
+│
+└── sample_audio/
+    └── generated WAV files

@@ -1,0 +1,14 @@
+
+streamlit
+numpy
+pandas
+matplotlib
+librosa
+scikit-learn
+gTTS
+soundfile
+audioread
+scipy
+scikit-learn
+joblib
+
