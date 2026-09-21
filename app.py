@@ -7,10 +7,16 @@ import librosa.display
 import tempfile
 import os
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 from gtts import gTTS
+
+try:
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.pipeline import Pipeline
+except ImportError:
+    RandomForestClassifier = None
+    StandardScaler = None
+    Pipeline = None
 
 
 # =========================================================
@@ -379,27 +385,64 @@ def create_demo_dataset():
 # TRAIN MODEL
 # =========================================================
 
+class NumpyNearestCentroid:
+
+    def fit(self, X, y):
+
+        self.classes_ = np.unique(y)
+        self.mean_ = X.mean(axis=0)
+        self.scale_ = X.std(axis=0)
+        self.scale_[self.scale_ == 0] = 1
+        normalized = (X - self.mean_) / self.scale_
+
+        self.centroids_ = np.array(
+            [normalized[y == label].mean(axis=0) for label in self.classes_]
+        )
+
+        return self
+
+    def _probabilities(self, X):
+
+        normalized = (X - self.mean_) / self.scale_
+        distances = np.linalg.norm(
+            normalized[:, None, :] - self.centroids_[None, :, :],
+            axis=2
+        )
+        scores = np.exp(-distances)
+
+        return scores / scores.sum(axis=1, keepdims=True)
+
+    def predict_proba(self, X):
+        return self._probabilities(X)
+
+    def predict(self, X):
+        probabilities = self._probabilities(X)
+        return self.classes_[np.argmax(probabilities, axis=1)]
+
 @st.cache_resource
 def train_model():
 
     X, y = create_demo_dataset()
 
-    model = Pipeline(
-        [
-            (
-                "scaler",
-                StandardScaler()
-            ),
+    if RandomForestClassifier is not None:
+        model = Pipeline(
+            [
+                (
+                    "scaler",
+                    StandardScaler()
+                ),
 
-            (
-                "classifier",
-                RandomForestClassifier(
-                    n_estimators=180,
-                    random_state=42
+                (
+                    "classifier",
+                    RandomForestClassifier(
+                        n_estimators=180,
+                        random_state=42
+                    )
                 )
-            )
-        ]
-    )
+            ]
+        )
+    else:
+        model = NumpyNearestCentroid()
 
     model.fit(X, y)
 
